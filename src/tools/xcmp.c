@@ -10,15 +10,15 @@
 #endif
 
 static uint32_t
-dump_dif64(void *_d1, void *_d2, void *_base1)
+dump_dif64(void *_d1, void *_d2, size_t off)
 {
-	uint8_t *d1 = _d1, *d2 = _d2, *base1 = _base1;
+	uint8_t *d1 = _d1, *d2 = _d2;
 
 	uint32_t cnt = 0;
 	for (int i = 0; i < 8; i++) {
 		if (d1[i] != d2[i]) {
 			printf("%08lx : %02x -- %02x\n",
-			    &d1[i] - base1, d1[i], d2[i]);
+			    off + i, d1[i], d2[i]);
 			cnt++;
 		}
 	}
@@ -49,14 +49,16 @@ main(int argc, char *argv[])
 	uint64_t cnt_u64 = size / sizeof(uint64_t);
 	for (uint64_t i = 0; i < cnt_u64; i++)
 		if (d1[i] != d2[i])
-			diff_cnt += dump_dif64(&d1[i], &d2[i], d1);
+			diff_cnt += dump_dif64(&d1[i], &d2[i],
+			    (char*)&d1[i] - (char*)d1);
 
 	uint8_t cnt_u8 = size % sizeof(uint64_t);
 	if (cnt_u8) {
 		uint8_t c1[8] = {0}, c2[8] = {0};
 		memcpy(c1, &d1[cnt_u64], cnt_u8);
 		memcpy(c2, &d2[cnt_u64], cnt_u8);
-		diff_cnt += dump_dif64(c1, c2, d1);
+		diff_cnt += dump_dif64(c1, c2,
+		    (char*)&d1[cnt_u64] - (char*)d1);
 	}
 
 	if (!diff_cnt) {
